@@ -1,7 +1,5 @@
 import { get, type Updater, type Subscriber } from 'svelte/store';
 import { StorageType, type StorageOptions, type Persisted } from './types.js';
-import type { Loadable } from '../async-stores/types.js';
-import { isLoadable, reloadAll } from '../utils/index.js';
 import { writable } from '../standard-stores/index.js';
 import {
   getCookie,
@@ -86,7 +84,7 @@ export const configurePersistedConsent = (
  * @param options Modifiers for store behavior.
  */
 export const persisted = <T>(
-  initial: T | Loadable<T>,
+  initial: T,
   key: string | (() => Promise<string>),
   options: StorageOptions = {}
 ): Persisted<T> => {
@@ -119,16 +117,9 @@ export const persisted = <T>(
       set(stored as T);
       return stored as T;
     } else if (initial !== undefined) {
-      if (isLoadable(initial)) {
-        const $initial = await initial.load();
-        await setAndPersist($initial, set);
+      await setAndPersist(initial, set);
 
-        return $initial;
-      } else {
-        await setAndPersist(initial, set);
-
-        return initial;
-      }
+      return initial;
     } else {
       set(undefined);
       return undefined;
@@ -137,7 +128,7 @@ export const persisted = <T>(
 
   let initialSync: Promise<T>;
 
-  const thisStore = writable<T>(undefined, (set) => {
+  const thisStore = writable<T>(initial, (set) => {
     initialSync = synchronize(set);
   });
 
@@ -169,16 +160,8 @@ export const persisted = <T>(
 
   const reload = reloadable
     ? async () => {
-        let newValue: T;
-
-        if (isLoadable(initial)) {
-          [newValue] = await reloadAll([initial]);
-        } else {
-          newValue = initial;
-        }
-
-        setAndPersist(newValue, thisStore.set);
-        return newValue;
+        setAndPersist(initial, thisStore.set);
+        return initial;
       }
     : undefined;
 
