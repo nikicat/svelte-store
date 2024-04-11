@@ -12,6 +12,7 @@
     "moduleResolution": "node",
     "module": "es2022",
     "strict": false,
+    "allowSyntheticDefaultImports": true,
   },
   "include": [
     "src/**/*"

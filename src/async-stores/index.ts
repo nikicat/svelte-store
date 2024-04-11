@@ -16,6 +16,7 @@ import {
   loadAll,
 } from '../utils/index.js';
 import { flagStoreCreated, getStoreTestingMode, logError } from '../config.js';
+import deepEqual from 'deep-equal';
 
 // STORES
 
@@ -68,7 +69,7 @@ export const asyncWritable = <S extends Stores, T>(
 
   // stringified representation of parents' loaded values
   // used to track whether a change has occurred and the store reloaded
-  let loadedValuesString: string;
+  let loadedValues: StoresValues<S>;
 
   let latestLoadAndSet: () => Promise<T>;
 
@@ -127,12 +128,11 @@ export const asyncWritable = <S extends Stores, T>(
     ) as StoresValues<S>;
 
     if (!forceReload) {
-      const newValuesString = JSON.stringify(storeValues);
-      if (newValuesString === loadedValuesString) {
+      if (deepEqual(storeValues, loadedValues)) {
         // no change, don't generate new promise
         return currentLoadPromise;
       }
-      loadedValuesString = newValuesString;
+      loadedValues = storeValues;
     }
 
     // convert storeValues to single store value if expected by mapping function
@@ -238,7 +238,7 @@ export const asyncWritable = <S extends Stores, T>(
     ? () => {
         thisStore.set(initial);
         setState('LOADING');
-        loadedValuesString = undefined;
+        loadedValues = undefined;
         currentLoadPromise = undefined;
       }
     : undefined;
