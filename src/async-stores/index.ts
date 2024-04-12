@@ -81,8 +81,8 @@ export const asyncWritable = <S extends Stores, T>(
     try {
       return await mappingLoadFunction(values);
     } catch (e) {
-      if (e.name !== 'AbortError') {
-        logError(e);
+      if ((e as Error).name !== 'AbortError') {
+        logError(e as Error);
         setState('ERROR');
       }
       throw e;
@@ -150,7 +150,7 @@ export const asyncWritable = <S extends Stores, T>(
         return finalValue;
       } catch (e) {
         // if a load is aborted, resolve to the current value of the store
-        if (e.name === 'AbortError') {
+        if ((e as Error).name === 'AbortError') {
           // Normally when a load is aborted we want to leave the state as is.
           // However if the latest load is aborted we change back to LOADED
           // so that it does not get stuck LOADING/RELOADIN'.
@@ -199,7 +199,7 @@ export const asyncWritable = <S extends Stores, T>(
           currentLoadPromise = currentLoadPromise.then(() => writeResponse);
         }
       } catch (e) {
-        logError(e);
+        logError(e as Error);
         setState('ERROR');
         throw e;
       }
