@@ -128,9 +128,13 @@ export const asyncWritable = <S extends Stores, T>(
     ) as StoresValues<S>;
 
     if (!forceReload) {
-      if (deepEqual(storeValues, loadedValues)) {
-        // no change, don't generate new promise
-        return currentLoadPromise;
+      try {
+        if (deepEqual(storeValues, loadedValues)) {
+          // no change, don't generate new promise
+          return currentLoadPromise;
+        }
+      } catch {
+        // Just ignore all errors
       }
       loadedValues = storeValues;
     }
