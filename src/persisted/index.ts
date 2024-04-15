@@ -1,5 +1,5 @@
 import { get, type Updater, type Subscriber } from 'svelte/store';
-import { StorageType, type StorageOptions, type Persisted } from './types.js';
+import type { StorageType, StorageOptions, Persisted } from './types.js';
 import type { Loadable } from '../async-stores/types.js';
 import { isLoadable, reloadAll } from '../utils/index.js';
 import { writable } from '../standard-stores/index.js';

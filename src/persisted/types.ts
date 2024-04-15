@@ -1,4 +1,4 @@
-import { WritableLoadable } from '../async-stores/types.js';
+import { type WritableLoadable } from '../async-stores/types.js';
 
 export type StorageType = 'LOCAL_STORAGE' | 'SESSION_STORAGE' | 'COOKIE';
 

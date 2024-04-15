@@ -1,6 +1,14 @@
-import { Loadable, StoresValues } from '../async-stores/types.js';
-import { AsyncClient } from './types.js';
+import { type Loadable, type StoresValues } from '../async-stores/types.js';
+import { type AsyncClient } from './types.js';
 import { get } from 'svelte/store';
+
+interface Indexable<V> {
+  [key: string | symbol]: V;
+}
+
+interface ProxiedFunction<V> extends Indexable<V> {
+  (): void;
+}
 
 /**
  * Generates an AsyncClient from a Loadable store. The AsyncClient will have all
@@ -12,16 +20,20 @@ import { get } from 'svelte/store';
  * @returns an asyncClient with the properties of the input store and asynchronous
  * accessors to the properties of the store's loaded value
  */
-export const asyncClient = <S extends Loadable<unknown>>(
+export const asyncClient = <
+  I,
+  U extends Indexable<I>,
+  S extends Loadable<U> & Indexable<I>
+>(
   loadable: S
 ): S & AsyncClient<StoresValues<S>> => {
   // Generate an empty function that will be proxied.
   // This lets us invoke the resulting asyncClient.
   // An anonymous function is used instead of the function prototype
   // so that testing environments can tell asyncClients apart.
-  const emptyFunction = () => {
+  const emptyFunction = (() => {
     /* no op*/
-  };
+  }) as ProxiedFunction<I>;
   return new Proxy(emptyFunction, {
     get: (proxiedFunction, property) => {
       if (proxiedFunction[property]) {

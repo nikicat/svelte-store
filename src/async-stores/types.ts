@@ -1,4 +1,4 @@
-import { Readable, Updater, Writable } from 'svelte/store';
+import type { Readable, Updater, Writable } from 'svelte/store';
 
 export type State = 'LOADING' | 'LOADED' | 'RELOADING' | 'ERROR' | 'WRITING';
 
