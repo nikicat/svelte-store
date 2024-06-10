@@ -10,6 +10,7 @@ export type LoadState = {
   isError: boolean;
   isPending: boolean; // LOADING or RELOADING
   isSettled: boolean; // LOADED or ERROR
+  error?: Error;
 };
 
 export type VisitedMap = WeakMap<Readable<unknown>, Promise<unknown>>;
@@ -38,6 +39,7 @@ export interface AsyncStoreOptions<T> {
   reloadable?: true;
   trackState?: true;
   initial?: T;
+  id?: string;
 }
 export declare type StoresArray =
   | [Readable<unknown>, ...Array<Readable<unknown>>]

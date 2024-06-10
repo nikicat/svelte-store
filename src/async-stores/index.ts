@@ -20,7 +20,7 @@ import deepEqual from 'deep-equal';
 
 // STORES
 
-const getLoadState = (stateString: State): LoadState => {
+const getLoadState = (stateString: State, error?: Error): LoadState => {
   return {
     isLoading: stateString === 'LOADING',
     isReloading: stateString === 'RELOADING',
@@ -29,8 +29,11 @@ const getLoadState = (stateString: State): LoadState => {
     isError: stateString === 'ERROR',
     isPending: stateString === 'LOADING' || stateString === 'RELOADING',
     isSettled: stateString === 'LOADED' || stateString === 'ERROR',
+    error,
   };
 };
+
+const debug = false;
 
 /**
  * Generate a Loadable store that is considered 'loaded' after resolving synchronous or asynchronous behavior.
@@ -59,13 +62,23 @@ export const asyncWritable = <S extends Stores, T>(
   options: AsyncStoreOptions<T> = {}
 ): WritableLoadable<T> => {
   flagStoreCreated();
-  const { reloadable, trackState, initial } = options;
+  const { reloadable, trackState, initial, id } = options;
+  const log = (msg: string, ...args: unknown[]) => {
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.log(`[${id}] ${msg}`, ...args);
+    }
+  };
+  log('created', options, stores);
 
   const loadState = trackState
     ? writable<LoadState>(getLoadState('LOADING'))
     : undefined;
 
-  const setState = (state: State) => loadState?.set(getLoadState(state));
+  const setState = (state: State, error?: Error) => {
+    log('set state', state, error);
+    loadState?.set(getLoadState(state, error));
+  };
 
   // stringified representation of parents' loaded values
   // used to track whether a change has occurred and the store reloaded
@@ -83,7 +96,7 @@ export const asyncWritable = <S extends Stores, T>(
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
         logError(e as Error);
-        setState('ERROR');
+        setState('ERROR', e as Error);
       }
       throw e;
     }
@@ -114,15 +127,18 @@ export const asyncWritable = <S extends Stores, T>(
     forceReload = false
   ) => {
     const loadParentStores = parentLoadFunction(stores);
+    log('load deps start');
 
     try {
       await loadParentStores;
-    } catch {
+    } catch (err: unknown) {
       currentLoadPromise = loadParentStores as Promise<T>;
-      setState('ERROR');
+      log('load deps error', err);
+      setState('ERROR', err as Error);
       return currentLoadPromise;
     }
 
+    log('load deps success');
     const storeValues = getStoresArray(stores).map((store) =>
       get(store)
     ) as StoresValues<S>;
@@ -138,6 +154,7 @@ export const asyncWritable = <S extends Stores, T>(
       }
       loadedValues = storeValues;
     }
+    log('load deps new values', storeValues);
 
     // convert storeValues to single store value if expected by mapping function
     const loadInput = Array.isArray(stores) ? storeValues : storeValues[0];
@@ -148,11 +165,14 @@ export const asyncWritable = <S extends Stores, T>(
         setState('RELOADING');
       }
       try {
+        log('loading');
         const finalValue = await tryLoad(loadInput);
+        log('loaded', finalValue);
         thisStore.set(finalValue);
         setState('LOADED');
         return finalValue;
       } catch (e) {
+        log('load error', e);
         // if a load is aborted, resolve to the current value of the store
         if ((e as Error).name === 'AbortError') {
           // Normally when a load is aborted we want to leave the state as is.
@@ -163,6 +183,7 @@ export const asyncWritable = <S extends Stores, T>(
           }
           return get(thisStore);
         }
+        setState('ERROR', e as Error);
         throw e;
       }
     };
